@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GitHub Pages Python Script</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+<body>
+  <h1>GitHub Pages Python Script</h1>
+  <button id="runScript">Run Script</button>
+  <div id="output"></div>
+
+  <script>
+    $(document).ready(function() {
+      $("#runScript").click(function() {
+        $.ajax({
+          url: "main.py",
+          success: function(result) {
+            $("#output").text(result);
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
