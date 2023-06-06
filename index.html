@@ -1,25 +1,70 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>GitHub Pages Python Script</title>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <title>Blueprint Generator</title>
+  <style>
+    #preview {
+      max-width: 500px;
+      max-height: 500px;
+    }
+  </style>
 </head>
 <body>
-  <h1>GitHub Pages Python Script</h1>
-  <button id="runScript">Run Script</button>
-  <div id="output"></div>
+  <h1>Blueprint Generator</h1>
+  <form id="inputForm">
+    <label for="imageInput">Select an image:</label>
+    <input type="file" id="imageInput" accept="image/*" required>
+    <br>
+    <label for="scaleInput">Scale factor (0.0 - 1.0):</label>
+    <input type="number" id="scaleInput" step="0.01" min="0" max="1" value="0.5" required>
+    <br>
+    <button type="submit">Generate Blueprint</button>
+  </form>
+  <br>
+  <h2>Preview:</h2>
+  <img id="preview">
+  <br>
+  <a id="downloadLink" href="#" download>Download Blueprint</a>
 
   <script>
-    $(document).ready(function() {
-      $("#runScript").click(function() {
-        $.ajax({
-          url: "main.py",
-          success: function(result) {
-            $("#output").text(result);
-          }
-        });
-      });
-    });
+    function handleFormSubmit(event) {
+      event.preventDefault();
+      
+      const imageInput = document.getElementById('imageInput');
+      const scaleInput = document.getElementById('scaleInput');
+      const previewImage = document.getElementById('preview');
+      const downloadLink = document.getElementById('downloadLink');
+
+      const file = imageInput.files[0];
+      const scale = parseFloat(scaleInput.value);
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const imageUrl = event.target.result;
+        previewImage.src = imageUrl;
+
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('scale', scale);
+
+        fetch('/generate_blueprint', {
+          method: 'POST',
+          body: formData
+        })
+          .then(response => response.blob())
+          .then(blob => {
+            const url = URL.createObjectURL(blob);
+            downloadLink.href = url;
+            downloadLink.style.display = 'block';
+          })
+          .catch(error => console.error(error));
+      };
+
+      reader.readAsDataURL(file);
+    }
+
+    const form = document.getElementById('inputForm');
+    form.addEventListener('submit', handleFormSubmit);
   </script>
 </body>
 </html>
