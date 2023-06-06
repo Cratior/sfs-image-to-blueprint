@@ -43,21 +43,71 @@
         const imageUrl = event.target.result;
         previewImage.src = imageUrl;
 
-        const formData = new FormData();
-        formData.append('image', file);
-        formData.append('scale', scale);
+        const image = new Image();
+        image.src = imageUrl;
 
-        fetch('/generate_blueprint', {
-          method: 'POST',
-          body: formData
-        })
-          .then(response => response.blob())
-          .then(blob => {
-            const url = URL.createObjectURL(blob);
-            downloadLink.href = url;
-            downloadLink.style.display = 'block';
-          })
-          .catch(error => console.error(error));
+        image.onload = function() {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const scaledWidth = image.width * scale;
+          const scaledHeight = image.height * scale;
+          
+          canvas.width = scaledWidth;
+          canvas.height = scaledHeight;
+          ctx.drawImage(image, 0, 0, scaledWidth, scaledHeight);
+          
+          const blueprint = {
+            "center": 10.0,
+            "parts": [],
+            "stages": [],
+            "rotation": 0.0,
+            "offset": {"x": 0.0, "y": 0.0},
+            "interiorView": true
+          };
+
+          const imageData = ctx.getImageData(0, 0, scaledWidth, scaledHeight);
+          const pixels = imageData.data;
+
+          for (let y = 0; y < scaledHeight; y++) {
+            for (let x = 0; x < scaledWidth; x++) {
+              const index = (y * scaledWidth + x) * 4;
+              const r = pixels[index];
+              const g = pixels[index + 1];
+              const b = pixels[index + 2];
+              
+              // Check if the pixel is black
+              if (r === 0 && g === 0 && b === 0) {
+                const scaledX = x;
+                const scaledY = scaledHeight - y - 1;
+
+                const fuelTank = {
+                  "n": "Fuel Tank",
+                  "p": {"x": scaledX, "y": scaledY},
+                  "o": {"x": 1.0, "y": 1.0, "z": 0.0},
+                  "t": "-Infinity",
+                  "N": {
+                    "width_original": 2.0,
+                    "width_a": 2.0,
+                    "width_b": 2.0,
+                    "height": 1.0,
+                    "fuel_percent": 1.0
+                  },
+                  "T": {"color_tex": "_", "shape_tex": "_"}
+                };
+                
+                blueprint.parts.push(fuelTank);
+              }
+            }
+          }
+
+          const blueprintJson = JSON.stringify(blueprint, null, 4);
+          const blob = new Blob([blueprintJson], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          
+          downloadLink.href = url;
+          downloadLink.style.display = 'block';
+          downloadLink.download = 'blueprint.json';
+        };
       };
 
       reader.readAsDataURL(file);
